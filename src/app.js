@@ -1,0 +1,40 @@
+const express = require("express");
+const morgan = require("morgan");
+const { init } = require("./db");
+const createItemsRouter = require("./routes/items");
+const cors = require("cors");
+
+const app = express();
+app.use(morgan("dev"));
+app.use(express.json());
+
+// Export an async function to initialize DB before returning the app
+async function createApp() {
+  const db = await init();
+  // Enable CORS for all origins (adjust in production)
+  app.use(
+    cors({
+      exposedHeaders: [
+        "X-Total-Count",
+        "X-Page",
+        "X-Page-Size",
+        "X-Total-Pages",
+      ],
+    })
+  );
+  // Serve a small test page from /test.html to avoid chrome:// CSP issues
+  app.use(express.static(require("path").join(__dirname, "..", "public")));
+  // attach db to app so callers (tests) can close it when needed
+  app.db = db;
+  app.use("/items", createItemsRouter(db));
+  const createUsersRouter = require("./routes/users");
+  app.use("/users", createUsersRouter(db));
+  const createQuizzesRouter = require("./routes/quizzes");
+  app.use("/quizzes", createQuizzesRouter(db));
+  const createQuizLogsRouter = require("./routes/quizlogs");
+  app.use("/quizlogs", createQuizLogsRouter(db));
+  app.get("/", (req, res) => res.json({ status: "ok" }));
+  return app;
+}
+
+module.exports = createApp;

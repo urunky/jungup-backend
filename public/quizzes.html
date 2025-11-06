@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Quizzes CRUD</title>
+    <style>
+      body {
+        font-family: Segoe UI, Arial;
+        max-width: 900px;
+        margin: 24px;
+      }
+      input,
+      button,
+      select {
+        margin: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Quizzes</h1>
+
+    <form id="createForm">
+      <label>Name: <input id="name" required /></label>
+      <label
+        >Item:
+        <select id="itemSelect"></select
+      ></label>
+      <label
+        >Solved:
+        <select id="solved">
+          <option value="0">false</option>
+          <option value="1">true</option>
+        </select></label
+      >
+      <label>Score: <input type="number" id="score" value="0" /></label><br />
+      <label>opt1: <input id="opt1" /></label>
+      <label>opt2: <input id="opt2" /></label>
+      <label>opt3: <input id="opt3" /></label>
+      <label>opt4: <input id="opt4" /></label>
+      <label
+        >answer (index 1-4):
+        <input type="number" id="answer" min="1" max="4" value="1"
+      /></label>
+      <button type="submit">Create</button>
+    </form>
+
+    <button id="refresh">Refresh list</button>
+    <div id="status"></div>
+    <ul id="list"></ul>
+
+    <script>
+      const status = document.getElementById("status");
+      const list = document.getElementById("list");
+      async function refresh() {
+        const res = await fetch("/quizzes");
+        const data = await res.json();
+        list.innerHTML = "";
+        data.forEach((u) => {
+          const li = document.createElement("li");
+          li.innerHTML = `#${u.id} name:${u.name} itemId:${
+            u.itemId || ""
+          } solved:${u.solved} score:${u.score} opts:[${u.opt1 || ""},${
+            u.opt2 || ""
+          },${u.opt3 || ""},${u.opt4 || ""}] answer:${
+            u.answer
+          } <button data-id="${
+            u.id
+          }" class="del">Delete</button> <button data-id="${
+            u.id
+          }" class="edit">Edit</button>`;
+          list.appendChild(li);
+        });
+      }
+
+      document.getElementById("refresh").addEventListener("click", refresh);
+
+      document
+        .getElementById("createForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = document.getElementById("name").value;
+          const itemId = document.getElementById("itemSelect").value
+            ? Number(document.getElementById("itemSelect").value)
+            : null;
+          const solved = document.getElementById("solved").value === "1";
+          const score = Number(document.getElementById("score").value || 0);
+          const opt1 = document.getElementById("opt1").value;
+          const opt2 = document.getElementById("opt2").value;
+          const opt3 = document.getElementById("opt3").value;
+          const opt4 = document.getElementById("opt4").value;
+          const answer = Number(document.getElementById("answer").value || 1);
+          const res = await fetch("/quizzes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              solved,
+              score,
+              opt1,
+              opt2,
+              opt3,
+              opt4,
+              answer,
+              itemId,
+            }),
+          });
+          const j = await res.json();
+          status.textContent = `Created id=${j.id}`;
+          refresh();
+        });
+
+      list.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("del")) {
+          const id = e.target.dataset.id;
+          await fetch(`/quizzes/${id}`, { method: "DELETE" });
+          refresh();
+        }
+        if (e.target.classList.contains("edit")) {
+          const id = e.target.dataset.id;
+          const itemId = prompt("itemId (blank to clear)?");
+          const name = prompt("New name?");
+          const solved = confirm("Solved? OK=true Cancel=false");
+          const score = prompt("New score?");
+          const opt1 = prompt("opt1?");
+          const opt2 = prompt("opt2?");
+          const opt3 = prompt("opt3?");
+          const opt4 = prompt("opt4?");
+          const answer = prompt("answer (1-4)?");
+          if (name !== null) {
+            const res = await fetch(`/quizzes/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name,
+                solved,
+                score: Number(score),
+                opt1,
+                opt2,
+                opt3,
+                opt4,
+                answer: Number(answer),
+                itemId: itemId ? Number(itemId) : null,
+              }),
+            });
+            const j = await res.json();
+            status.textContent = `Updated id=${j.id}`;
+            refresh();
+          }
+        }
+      });
+
+      refresh();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Users CRUD</title>
+    <style>body{font-family:Segoe UI,Arial;max-width:900px;margin:24px}input,button,select{margin:4px}</style>
+  </head>
+  <body>
+    <h1>Users</h1>
+
+    <form id="createForm">
+      <label>Age: <input type="number" id="age" required /></label>
+      <label>Interest: <input id="interest" /></label>
+      <button type="submit">Create</button>
+    </form>
+
+    <button id="refresh">Refresh list</button>
+    <div id="status"></div>
+    <ul id="list"></ul>
+
+    <script>
+      const status = document.getElementById('status');
+      const list = document.getElementById('list');
+      async function refresh(){
+        const res = await fetch('/users');
+        const data = await res.json();
+        list.innerHTML = '';
+        data.forEach(u => {
+          const li = document.createElement('li');
+          li.innerHTML = `#${u.id} age:${u.age} interest:${u.interest || ''} <button data-id="${u.id}" class="del">Delete</button> <button data-id="${u.id}" class="edit">Edit</button>`;
+          list.appendChild(li);
+        });
+      }
+
+      document.getElementById('refresh').addEventListener('click', refresh);
+
+      document.getElementById('createForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const age = Number(document.getElementById('age').value);
+        const interest = document.getElementById('interest').value;
+        const res = await fetch('/users', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({age,interest})});
+        const j = await res.json();
+        status.textContent = `Created id=${j.id}`;
+        refresh();
+      });
+
+      list.addEventListener('click', async (e)=>{
+        if(e.target.classList.contains('del')){
+          const id = e.target.dataset.id;
+          await fetch(`/users/${id}`, { method:'DELETE' });
+          refresh();
+        }
+        if(e.target.classList.contains('edit')){
+          const id = e.target.dataset.id;
+          const age = prompt('New age?');
+          const interest = prompt('New interest?');
+          if(age!==null){
+            const res = await fetch(`/users/${id}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({age: Number(age), interest})});
+            const j = await res.json();
+            status.textContent = `Updated id=${j.id}`;
+            refresh();
+          }
+        }
+      });
+
+      // initial
+      refresh();
+    </script>
+  </body>
+</html>
