@@ -1,12 +1,20 @@
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
 const path = require("path");
+const fs = require("fs");
 
 // DB_FILE env var lets us use different db for tests
 const dbPath =
   process.env.DB_FILE || path.join(__dirname, "..", "data", "app.db");
 
 async function init() {
+  // Ensure the database directory exists; create if missing
+  try {
+    const dir = path.dirname(dbPath);
+    await fs.promises.mkdir(dir, { recursive: true });
+  } catch (e) {
+    // ignore directory creation errors; open() may still create file if dir exists
+  }
   const db = await open({ filename: dbPath, driver: sqlite3.Database });
   // SQLite runtime settings
   await db.exec(`PRAGMA journal_mode = WAL;`);
