@@ -52,7 +52,7 @@
       const status = document.getElementById("status");
       const list = document.getElementById("list");
       async function refresh() {
-        const res = await fetch("/quizzes");
+        const res = await fetch("/api/quizzes");
         const data = await res.json();
         list.innerHTML = "";
         data.forEach((u) => {
@@ -89,7 +89,7 @@
           const opt3 = document.getElementById("opt3").value;
           const opt4 = document.getElementById("opt4").value;
           const answer = Number(document.getElementById("answer").value || 1);
-          const res = await fetch("/quizzes", {
+          const res = await fetch("/api/quizzes", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -112,7 +112,7 @@
       list.addEventListener("click", async (e) => {
         if (e.target.classList.contains("del")) {
           const id = e.target.dataset.id;
-          await fetch(`/quizzes/${id}`, { method: "DELETE" });
+          await fetch(`/api/quizzes/${id}`, { method: "DELETE" });
           refresh();
         }
         if (e.target.classList.contains("edit")) {
@@ -127,7 +127,7 @@
           const opt4 = prompt("opt4?");
           const answer = prompt("answer (1-4)?");
           if (name !== null) {
-            const res = await fetch(`/quizzes/${id}`, {
+            const res = await fetch(`/api/quizzes/${id}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

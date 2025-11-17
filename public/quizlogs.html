@@ -1,16 +1,33 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
     <title>QuizLogs CRUD</title>
-    <style>body{font-family:Segoe UI,Arial;max-width:900px;margin:24px}input,button,select{margin:4px}</style>
+    <style>
+      body {
+        font-family: Segoe UI, Arial;
+        max-width: 900px;
+        margin: 24px;
+      }
+      input,
+      button,
+      select {
+        margin: 4px;
+      }
+    </style>
   </head>
   <body>
     <h1>QuizLogs</h1>
 
     <form id="createForm">
-      <label>Quiz: <select id="quizSelect"></select></label>
-      <label>User: <select id="userSelect"></select></label>
+      <label
+        >Quiz:
+        <select id="quizSelect"></select
+      ></label>
+      <label
+        >User:
+        <select id="userSelect"></select
+      ></label>
       <label>Answer: <input type="number" id="answer" /></label>
       <button type="submit">Create</button>
     </form>
@@ -20,76 +37,106 @@
     <ul id="list"></ul>
 
     <script>
-      const status = document.getElementById('status');
-      const list = document.getElementById('list');
-      const quizSelect = document.getElementById('quizSelect');
-      const userSelect = document.getElementById('userSelect');
+      const status = document.getElementById("status");
+      const list = document.getElementById("list");
+      const quizSelect = document.getElementById("quizSelect");
+      const userSelect = document.getElementById("userSelect");
 
-      async function loadSelects(){
-        const qres = await fetch('/quizzes');
+      async function loadSelects() {
+        const qres = await fetch("/api/quizzes");
         const quizzes = await qres.json();
-        console.log('quizzes', quizzes);
-          quizSelect.innerHTML = '';
-          if (!quizzes || quizzes.length === 0) {
-            const opt = new Option('(no quizzes available)', '');
-            opt.disabled = true;
-            quizSelect.appendChild(opt);
-          } else {
-            const ph = new Option('Select quiz', ''); ph.disabled = true; ph.selected = true; quizSelect.appendChild(ph);
-            quizzes.forEach(q => quizSelect.appendChild(new Option(`#${q.id} ${q.name}`, String(q.id))));
-          }
+        console.log("quizzes", quizzes);
+        quizSelect.innerHTML = "";
+        if (!quizzes || quizzes.length === 0) {
+          const opt = new Option("(no quizzes available)", "");
+          opt.disabled = true;
+          quizSelect.appendChild(opt);
+        } else {
+          const ph = new Option("Select quiz", "");
+          ph.disabled = true;
+          ph.selected = true;
+          quizSelect.appendChild(ph);
+          quizzes.forEach((q) =>
+            quizSelect.appendChild(
+              new Option(`#${q.id} ${q.name}`, String(q.id))
+            )
+          );
+        }
 
-        const ures = await fetch('/users');
+        const ures = await fetch("/api/users");
         const users = await ures.json();
-        userSelect.innerHTML = '';
+        userSelect.innerHTML = "";
         if (!users || users.length === 0) {
-          const opt = new Option('(no users available)', '');
+          const opt = new Option("(no users available)", "");
           opt.disabled = true;
           userSelect.appendChild(opt);
         } else {
-          const ph = new Option('Select user', ''); ph.disabled = true; ph.selected = true; userSelect.appendChild(ph);
-          users.forEach(u => userSelect.appendChild(new Option(`#${u.id} age:${u.age}`, String(u.id))));
+          const ph = new Option("Select user", "");
+          ph.disabled = true;
+          ph.selected = true;
+          userSelect.appendChild(ph);
+          users.forEach((u) =>
+            userSelect.appendChild(
+              new Option(`#${u.id} age:${u.age}`, String(u.id))
+            )
+          );
         }
       }
 
-      async function refresh(){
+      async function refresh() {
         await loadSelects();
-        const res = await fetch('/quizlogs');
+        const res = await fetch("/api/quizlogs");
         const data = await res.json();
-        list.innerHTML = '';
-        data.forEach(u => {
-          const li = document.createElement('li');
+        list.innerHTML = "";
+        data.forEach((u) => {
+          const li = document.createElement("li");
           li.innerHTML = `#${u.id} quiz:${u.quizId} user:${u.userId} answer:${u.answer} <button data-id="${u.id}" class="del">Delete</button> <button data-id="${u.id}" class="edit">Edit</button>`;
           list.appendChild(li);
         });
       }
 
-      document.getElementById('refresh').addEventListener('click', refresh);
+      document.getElementById("refresh").addEventListener("click", refresh);
 
-      document.getElementById('createForm').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-  if (!quizSelect.value) { status.textContent = 'Please select a quiz'; return; }
-  if (!userSelect.value) { status.textContent = 'Please select a user'; return; }
-  const quizId = Number(quizSelect.value);
-  const userId = Number(userSelect.value);
-        const answer = Number(document.getElementById('answer').value || 0);
-        const res = await fetch('/quizlogs', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quizId,userId,answer})});
-        const j = await res.json();
-        status.textContent = `Created id=${j.id}`;
-        refresh();
-      });
+      document
+        .getElementById("createForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!quizSelect.value) {
+            status.textContent = "Please select a quiz";
+            return;
+          }
+          if (!userSelect.value) {
+            status.textContent = "Please select a user";
+            return;
+          }
+          const quizId = Number(quizSelect.value);
+          const userId = Number(userSelect.value);
+          const answer = Number(document.getElementById("answer").value || 0);
+          const res = await fetch("/api/quizlogs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ quizId, userId, answer }),
+          });
+          const j = await res.json();
+          status.textContent = `Created id=${j.id}`;
+          refresh();
+        });
 
-      list.addEventListener('click', async (e)=>{
-        if(e.target.classList.contains('del')){
+      list.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("del")) {
           const id = e.target.dataset.id;
-          await fetch(`/quizlogs/${id}`, { method:'DELETE' });
+          await fetch(`/api/quizlogs/${id}`, { method: "DELETE" });
           refresh();
         }
-        if(e.target.classList.contains('edit')){
+        if (e.target.classList.contains("edit")) {
           const id = e.target.dataset.id;
-          const answer = prompt('New answer?');
-          if(answer!==null){
-            const res = await fetch(`/quizlogs/${id}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({answer: Number(answer)})});
+          const answer = prompt("New answer?");
+          if (answer !== null) {
+            const res = await fetch(`/api/quizlogs/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ answer: Number(answer) }),
+            });
             const j = await res.json();
             status.textContent = `Updated id=${j.id}`;
             refresh();

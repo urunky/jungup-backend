@@ -22,11 +22,11 @@ describe("QuizLogs API", () => {
 
     // create a user and a quiz to reference
     const uRes = await request(app)
-      .post("/users")
+      .post("/api/users")
       .send({ age: 25, interest: "testing" });
     createdUser = uRes.body;
     const qRes = await request(app)
-      .post("/quizzes")
+      .post("/api/quizzes")
       .send({ name: "Q1", solved: false });
     createdQuiz = qRes.body;
   });
@@ -37,7 +37,7 @@ describe("QuizLogs API", () => {
 
   test("create quizLog", async () => {
     const res = await request(app)
-      .post("/quizlogs")
+      .post("/api/quizlogs")
       .send({ quizId: createdQuiz.id, userId: createdUser.id, answer: 1 });
     expect(res.statusCode).toBe(201);
     expect(res.body.id).toBeDefined();
@@ -48,28 +48,28 @@ describe("QuizLogs API", () => {
   });
 
   test("list quizLogs", async () => {
-    const res = await request(app).get("/quizlogs");
+    const res = await request(app).get("/api/quizlogs");
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
   });
 
   test("get quizLog", async () => {
-    const res = await request(app).get(`/quizlogs/${createdLog.id}`);
+    const res = await request(app).get(`/api/quizlogs/${createdLog.id}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.answer).toBe(1);
   });
 
   test("update quizLog", async () => {
     const res = await request(app)
-      .put(`/quizlogs/${createdLog.id}`)
+      .put(`/api/quizlogs/${createdLog.id}`)
       .send({ answer: 2 });
     expect(res.statusCode).toBe(200);
     expect(res.body.answer).toBe(2);
   });
 
   test("delete quizLog", async () => {
-    const res = await request(app).delete(`/quizlogs/${createdLog.id}`);
+    const res = await request(app).delete(`/api/quizlogs/${createdLog.id}`);
     expect(res.statusCode).toBe(204);
   });
 });

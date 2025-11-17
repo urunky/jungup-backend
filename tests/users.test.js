@@ -26,7 +26,7 @@ describe("Users API", () => {
 
   test("create user", async () => {
     const res = await request(app)
-      .post("/users")
+      .post("/api/users")
       .send({ age: 30, interest: "coding", rewarded: 1 });
     expect(res.statusCode).toBe(201);
     expect(res.body.id).toBeDefined();
@@ -36,7 +36,7 @@ describe("Users API", () => {
   });
 
   test("list users", async () => {
-    const res = await request(app).get("/users");
+    const res = await request(app).get("/api/users");
     expect(res.statusCode).toBe(200);
     expect(typeof res.body.totalCount).toBe("number");
     expect(Array.isArray(res.body.data)).toBe(true);
@@ -49,7 +49,7 @@ describe("Users API", () => {
   });
 
   test("get user", async () => {
-    const res = await request(app).get(`/users/${created.id}`);
+    const res = await request(app).get(`/api/users/${created.id}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.age).toBe(30);
     expect([0, 1]).toContain(res.body.rewarded);
@@ -57,7 +57,7 @@ describe("Users API", () => {
 
   test("update user", async () => {
     const res = await request(app)
-      .put(`/users/${created.id}`)
+      .put(`/api/users/${created.id}`)
       .send({ age: 31, interest: "reading", rewarded: 0 });
     expect(res.statusCode).toBe(200);
     expect(res.body.age).toBe(31);
@@ -65,7 +65,7 @@ describe("Users API", () => {
   });
 
   test("delete user", async () => {
-    const res = await request(app).delete(`/users/${created.id}`);
+    const res = await request(app).delete(`/api/users/${created.id}`);
     expect(res.statusCode).toBe(204);
   });
 });

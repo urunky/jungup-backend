@@ -15,6 +15,27 @@ function createRouter(db) {
       result.lastID,
     ]);
 
+    // Create 10 quest logs for random items for this user (done=false)
+    try {
+      const items = await db.all(
+        "SELECT id FROM items ORDER BY RANDOM() LIMIT 10"
+      );
+      if (items && items.length > 0) {
+        const stmt = await db.prepare(
+          "INSERT INTO questLogs (itemId, userId, done) VALUES (?, ?, ?)"
+        );
+        try {
+          for (const it of items) {
+            await stmt.run(it.id, user.id, 0);
+          }
+        } finally {
+          await stmt.finalize();
+        }
+      }
+    } catch (e) {
+      // Ignore quest log generation errors to not block user creation
+    }
+
     // 인증 토큰 생성 (간단한 예시: userId + 랜덤)
     const token = crypto.randomBytes(16).toString("hex") + "-" + user.id;
     res.cookie("auth", token, {
@@ -74,13 +95,49 @@ function createRouter(db) {
     res.json(row);
   });
 
+  // Read user's questLogs
+  router.get("/:id/questLogs", async (req, res) => {
+    const id = Number(req.params.id);
+    console.log("id", id);
+    const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
+    if (!user) return res.status(404).json({ error: "not found" });
+    console.log("user", user);
+    // Optional filters
+    const { done, itemId } = req.query;
+    const params = [id];
+    let where = "WHERE q.userId = ?";
+    if (done !== undefined) {
+      // Accept true/false/1/0 strings
+      const v = String(done).toLowerCase();
+      const doneVal = v === "true" || v === "1" ? 1 : 0;
+      where += " AND q.done = ?";
+      params.push(doneVal);
+    }
+    if (itemId !== undefined) {
+      where += " AND q.itemId = ?";
+      params.push(Number(itemId));
+    }
+
+    // Return questLogs joined with items for itemName, newest first
+    const rows = await db.all(
+      `SELECT q.*, i.name AS itemName
+       FROM questLogs q
+       JOIN items i ON i.id = q.itemId
+       ${where}
+       ORDER BY q.id DESC`,
+      params
+    );
+    console.log("rows", rows);
+    res.json(rows);
+  });
+
   // Update
   router.put("/:id", async (req, res) => {
     const id = Number(req.params.id);
-    const { age, interest } = req.body;
+    const { age, interest, rewarded } = req.body;
     const info = await db.run(
-      "UPDATE users SET age = ?, interest = ? WHERE id = ?",
-      [age, interest, id]
+      "UPDATE users SET age = ?, interest = ?, rewarded = ? WHERE id = ?",
+      [age, interest, rewarded != null ? rewarded : 0, id]
     );
     if (info.changes === 0) return res.status(404).json({ error: "not found" });
     const row = await db.get("SELECT * FROM users WHERE id = ?", [id]);

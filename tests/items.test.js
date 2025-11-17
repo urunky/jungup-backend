@@ -25,14 +25,14 @@ describe("Items API", () => {
   });
 
   test("health check", async () => {
-    const res = await request(app).get("/");
+    const res = await request(app).get("/api/");
     expect(res.statusCode).toBe(200);
     expect(res.body.status).toBe("ok");
   });
 
   test("create item", async () => {
     const res = await request(app)
-      .post("/items")
+      .post("/api/items")
       .send({ name: "Test", description: "desc" });
     expect(res.statusCode).toBe(201);
     expect(res.body.id).toBeDefined();
@@ -41,7 +41,7 @@ describe("Items API", () => {
   });
 
   test("list items", async () => {
-    const res = await request(app).get("/items");
+    const res = await request(app).get("/api/items");
     expect(res.statusCode).toBe(200);
     expect(typeof res.body.totalCount).toBe("number");
     expect(Array.isArray(res.body.data)).toBe(true);
@@ -49,21 +49,21 @@ describe("Items API", () => {
   });
 
   test("get item", async () => {
-    const res = await request(app).get(`/items/${created.id}`);
+    const res = await request(app).get(`/api/items/${created.id}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.name).toBe("Test");
   });
 
   test("update item", async () => {
     const res = await request(app)
-      .put(`/items/${created.id}`)
+      .put(`/api/items/${created.id}`)
       .send({ name: "Changed", description: "new" });
     expect(res.statusCode).toBe(200);
     expect(res.body.name).toBe("Changed");
   });
 
   test("delete item", async () => {
-    const res = await request(app).delete(`/items/${created.id}`);
+    const res = await request(app).delete(`/api/items/${created.id}`);
     expect(res.statusCode).toBe(204);
   });
 });

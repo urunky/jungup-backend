@@ -49,12 +49,23 @@ function createRouter(db) {
       totalPages = pageSize ? Math.max(Math.ceil(total / pageSize), 1) : 1;
       if (pageSize) {
         rows = await db.all(
-          "SELECT * FROM items WHERE stair = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+          `SELECT i.*, CASE WHEN COUNT(q.id) > 0 THEN 1 ELSE 0 END as hasQuiz
+           FROM items i
+           LEFT JOIN quizzes q ON q.itemId = i.id
+           WHERE i.stair = ?
+           GROUP BY i.id
+           ORDER BY i.id DESC
+           LIMIT ? OFFSET ?`,
           [stair, pageSize, offset]
         );
       } else {
         rows = await db.all(
-          "SELECT * FROM items WHERE stair = ? ORDER BY id DESC",
+          `SELECT i.*, CASE WHEN COUNT(q.id) > 0 THEN 1 ELSE 0 END as hasQuiz
+           FROM items i
+           LEFT JOIN quizzes q ON q.itemId = i.id
+           WHERE i.stair = ?
+           GROUP BY i.id
+           ORDER BY i.id DESC`,
           [stair]
         );
       }
@@ -64,11 +75,22 @@ function createRouter(db) {
       totalPages = pageSize ? Math.max(Math.ceil(total / pageSize), 1) : 1;
       if (pageSize) {
         rows = await db.all(
-          "SELECT * FROM items ORDER BY id DESC LIMIT ? OFFSET ?",
+          `SELECT i.*, CASE WHEN COUNT(q.id) > 0 THEN 1 ELSE 0 END as hasQuiz
+           FROM items i
+           LEFT JOIN quizzes q ON q.itemId = i.id
+           GROUP BY i.id
+           ORDER BY i.id DESC
+           LIMIT ? OFFSET ?`,
           [pageSize, offset]
         );
       } else {
-        rows = await db.all("SELECT * FROM items ORDER BY id DESC");
+        rows = await db.all(
+          `SELECT i.*, CASE WHEN COUNT(q.id) > 0 THEN 1 ELSE 0 END as hasQuiz
+           FROM items i
+           LEFT JOIN quizzes q ON q.itemId = i.id
+           GROUP BY i.id
+           ORDER BY i.id DESC`
+        );
       }
     }
 
@@ -96,7 +118,8 @@ function createRouter(db) {
     const quizzes = await db.all("SELECT * FROM quizzes WHERE itemId = ?", [
       id,
     ]);
-    res.json({ ...row, quizzes });
+    const hasQuiz = quizzes.length > 0 ? 1 : 0;
+    res.json({ ...row, hasQuiz, quizzes });
   });
 
   // Update

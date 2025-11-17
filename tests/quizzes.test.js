@@ -21,7 +21,7 @@ describe("Quizzes API", () => {
     app = await createApp();
     // create an item to reference
     const iRes = await request(app)
-      .post("/items")
+      .post("/api/items")
       .send({ name: "ref item", description: "for quiz" });
     item = iRes.body;
   });
@@ -31,7 +31,7 @@ describe("Quizzes API", () => {
   });
 
   test("create quiz", async () => {
-    const res = await request(app).post("/quizzes").send({
+    const res = await request(app).post("/api/quizzes").send({
       name: "First quiz",
       score: 10,
       opt1: "a",
@@ -39,6 +39,7 @@ describe("Quizzes API", () => {
       opt3: "c",
       opt4: "d",
       answer: "2",
+      answerImage: "/img/answers/quiz1.jpg",
       itemId: item.id,
     });
     expect(res.statusCode).toBe(201);
@@ -50,25 +51,36 @@ describe("Quizzes API", () => {
     expect(res.body.opt3).toBe("c");
     expect(res.body.opt4).toBe("d");
     expect(res.body.answer).toBe("2");
+    expect(res.body.answerImage).toBe("/img/answers/quiz1.jpg");
     expect(res.body.itemId).toBe(item.id);
     created = res.body;
   });
 
   test("list quizzes", async () => {
-    const res = await request(app).get("/quizzes");
+    const res = await request(app).get("/api/quizzes");
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
   });
 
+  test("list quizzes by itemId", async () => {
+    const res = await request(app).get(`/api/quizzes?itemId=${item.id}`);
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    res.body.forEach((quiz) => {
+      expect(quiz.itemId).toBe(item.id);
+    });
+  });
+
   test("get quiz", async () => {
-    const res = await request(app).get(`/quizzes/${created.id}`);
+    const res = await request(app).get(`/api/quizzes/${created.id}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.name).toBe("First quiz");
   });
 
   test("update quiz", async () => {
-    const res = await request(app).put(`/quizzes/${created.id}`).send({
+    const res = await request(app).put(`/api/quizzes/${created.id}`).send({
       name: "Renamed",
       score: 42,
       opt1: "A",
@@ -76,6 +88,7 @@ describe("Quizzes API", () => {
       opt3: "C",
       opt4: "D",
       answer: "1",
+      answerImage: "/img/answers/quiz2.png",
       itemId: item.id,
     });
     expect(res.statusCode).toBe(200);
@@ -85,11 +98,12 @@ describe("Quizzes API", () => {
     expect(res.body.opt3).toBe("C");
     expect(res.body.opt4).toBe("D");
     expect(res.body.answer).toBe("1");
+    expect(res.body.answerImage).toBe("/img/answers/quiz2.png");
     expect(res.body.itemId).toBe(item.id);
   });
 
   test("delete quiz", async () => {
-    const res = await request(app).delete(`/quizzes/${created.id}`);
+    const res = await request(app).delete(`/api/quizzes/${created.id}`);
     expect(res.statusCode).toBe(204);
   });
 });

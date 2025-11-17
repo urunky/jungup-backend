@@ -67,7 +67,7 @@ function pick(arr) {
     for (let i = 0; i < toInsert; i++) {
       const name = pick(names) + " #" + randInt(1, 999);
       const description = pick(descs);
-      const stair = i < target / 2 ? 2 : 3;
+      const stair = i < target / 2 ? 3 : 4;
       // img1: /img/items/item01.jpg ~ /img/items/item40.jpg, cycling
       const imgNum = ((i % 40) + 1).toString().padStart(2, "0");
       const img1 = `/img/items/item${imgNum}.jpg`;

@@ -14,6 +14,7 @@ async function createApp() {
   // Enable CORS for all origins (adjust in production)
   app.use(
     cors({
+      origin: "*",
       exposedHeaders: [
         "X-Total-Count",
         "X-Page",
@@ -26,14 +27,18 @@ async function createApp() {
   app.use(express.static(require("path").join(__dirname, "..", "public")));
   // attach db to app so callers (tests) can close it when needed
   app.db = db;
-  app.use("/items", createItemsRouter(db));
+  const api = express.Router();
+  api.use("/items", createItemsRouter(db));
   const createUsersRouter = require("./routes/users");
-  app.use("/users", createUsersRouter(db));
+  api.use("/users", createUsersRouter(db));
   const createQuizzesRouter = require("./routes/quizzes");
-  app.use("/quizzes", createQuizzesRouter(db));
+  api.use("/quizzes", createQuizzesRouter(db));
   const createQuizLogsRouter = require("./routes/quizlogs");
-  app.use("/quizlogs", createQuizLogsRouter(db));
-  app.get("/", (req, res) => res.json({ status: "ok" }));
+  api.use("/quizlogs", createQuizLogsRouter(db));
+  const createQuestLogsRouter = require("./routes/questLogs");
+  api.use("/questLogs", createQuestLogsRouter(db));
+  api.get("/", (req, res) => res.json({ status: "ok" }));
+  app.use("/api", api);
   return app;
 }
 
