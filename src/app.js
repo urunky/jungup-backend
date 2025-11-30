@@ -31,12 +31,8 @@ async function createApp() {
   api.use("/items", createItemsRouter(db));
   const createUsersRouter = require("./routes/users");
   api.use("/users", createUsersRouter(db));
-  const createQuizzesRouter = require("./routes/quizzes");
-  api.use("/quizzes", createQuizzesRouter(db));
-  const createQuizLogsRouter = require("./routes/quizlogs");
-  api.use("/quizlogs", createQuizLogsRouter(db));
-  const createQuestLogsRouter = require("./routes/questLogs");
-  api.use("/questLogs", createQuestLogsRouter(db));
+  const createItemLogsRouter = require("./routes/itemlogs");
+  api.use("/itemlogs", createItemLogsRouter(db));
   api.get("/", (req, res) => res.json({ status: "ok" }));
   app.use("/api", api);
   return app;

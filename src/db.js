@@ -32,6 +32,16 @@ async function init() {
       img1 TEXT,
       img2 TEXT,
       img3 TEXT,
+      score INTEGER DEFAULT 0,
+      opt1 TEXT,
+      opt2 TEXT,
+      opt3 TEXT,
+      opt4 TEXT,
+      answer TEXT,
+      answerImage TEXT,
+      question TEXT,
+      quizType TEXT,
+      content BLOB,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -76,6 +86,16 @@ async function init() {
     const hasImg1 = cols.some((c) => c.name === "img1");
     const hasImg2 = cols.some((c) => c.name === "img2");
     const hasImg3 = cols.some((c) => c.name === "img3");
+    const hasScore = cols.some((c) => c.name === "score");
+    const hasOpt1 = cols.some((c) => c.name === "opt1");
+    const hasOpt2 = cols.some((c) => c.name === "opt2");
+    const hasOpt3 = cols.some((c) => c.name === "opt3");
+    const hasOpt4 = cols.some((c) => c.name === "opt4");
+    const hasAnswer = cols.some((c) => c.name === "answer");
+    const hasAnswerImage = cols.some((c) => c.name === "answerImage");
+    const hasQuestion = cols.some((c) => c.name === "question");
+    const hasQuizType = cols.some((c) => c.name === "quizType");
+    const hasContent = cols.some((c) => c.name === "content");
     if (!hasImg1) {
       await db.exec("ALTER TABLE items ADD COLUMN img1 TEXT;");
     }
@@ -85,6 +105,36 @@ async function init() {
     if (!hasImg3) {
       await db.exec("ALTER TABLE items ADD COLUMN img3 TEXT;");
     }
+    if (!hasScore) {
+      await db.exec("ALTER TABLE items ADD COLUMN score INTEGER DEFAULT 0;");
+    }
+    if (!hasOpt1) {
+      await db.exec("ALTER TABLE items ADD COLUMN opt1 TEXT;");
+    }
+    if (!hasOpt2) {
+      await db.exec("ALTER TABLE items ADD COLUMN opt2 TEXT;");
+    }
+    if (!hasOpt3) {
+      await db.exec("ALTER TABLE items ADD COLUMN opt3 TEXT;");
+    }
+    if (!hasOpt4) {
+      await db.exec("ALTER TABLE items ADD COLUMN opt4 TEXT;");
+    }
+    if (!hasAnswer) {
+      await db.exec("ALTER TABLE items ADD COLUMN answer TEXT;");
+    }
+    if (!hasAnswerImage) {
+      await db.exec("ALTER TABLE items ADD COLUMN answerImage TEXT;");
+    }
+    if (!hasQuestion) {
+      await db.exec("ALTER TABLE items ADD COLUMN question TEXT;");
+    }
+    if (!hasQuizType) {
+      await db.exec("ALTER TABLE items ADD COLUMN quizType TEXT;");
+    }
+    if (!hasContent) {
+      await db.exec("ALTER TABLE items ADD COLUMN content TEXT;");
+    }
   } catch (e) {}
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -92,7 +142,9 @@ async function init() {
       age INTEGER,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       interest TEXT,
-      rewarded INTEGER DEFAULT 0
+      rewarded INTEGER DEFAULT 0,
+      grade TEXT,
+      area TEXT
     );
   `);
   // Migration: users.createdDate -> users.createdAt
@@ -101,6 +153,8 @@ async function init() {
     const hasCreatedAt = cols.some((c) => c.name === "createdAt");
     const hasCreatedDate = cols.some((c) => c.name === "createdDate");
     const hasRewarded = cols.some((c) => c.name === "rewarded");
+    const hasGrade = cols.some((c) => c.name === "grade");
+    const hasArea = cols.some((c) => c.name === "area");
     if (!hasCreatedAt && hasCreatedDate) {
       try {
         await db.exec(
@@ -116,109 +170,76 @@ async function init() {
     if (!hasRewarded) {
       await db.exec("ALTER TABLE users ADD COLUMN rewarded INTEGER DEFAULT 0;");
     }
-  } catch (e) {}
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS quizzes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      name TEXT,
-      score INTEGER DEFAULT 0,
-      opt1 TEXT,
-      opt2 TEXT,
-      opt3 TEXT,
-      opt4 TEXT,
-      answer TEXT,
-      answerImage TEXT,
-      itemId INTEGER,
-      FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE SET NULL
-    );
-  `);
-  // Migration: quizzes.createdDate -> quizzes.createdAt
-  try {
-    const cols = await db.all("PRAGMA table_info('quizzes')");
-    const hasCreatedAt = cols.some((c) => c.name === "createdAt");
-    const hasCreatedDate = cols.some((c) => c.name === "createdDate");
-    const hasAnswerImage = cols.some((c) => c.name === "answerImage");
-    if (!hasCreatedAt && hasCreatedDate) {
-      try {
-        await db.exec(
-          "ALTER TABLE quizzes RENAME COLUMN createdDate TO createdAt;"
-        );
-      } catch (e) {
-        await db.exec("ALTER TABLE quizzes ADD COLUMN createdAt DATETIME;");
-        await db.exec(
-          "UPDATE quizzes SET createdAt = COALESCE(createdDate, CURRENT_TIMESTAMP) WHERE createdAt IS NULL;"
-        );
-      }
+    if (!hasGrade) {
+      await db.exec("ALTER TABLE users ADD COLUMN grade TEXT;");
     }
-    if (!hasAnswerImage) {
-      await db.exec("ALTER TABLE quizzes ADD COLUMN answerImage TEXT;");
+    if (!hasArea) {
+      await db.exec("ALTER TABLE users ADD COLUMN area TEXT;");
     }
   } catch (e) {}
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS quizLogs (
+    CREATE TABLE IF NOT EXISTS itemLogs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      quizId INTEGER NOT NULL,
+      itemId INTEGER NOT NULL,
       userId INTEGER NOT NULL,
       answer INTEGER,
       imageData TEXT,
       imageMimeType TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (quizId) REFERENCES quizzes(id) ON DELETE CASCADE,
-      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
-    );
-  `);
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS questLogs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      itemId INTEGER NOT NULL,
-      userId INTEGER NOT NULL,
-      done INTEGER DEFAULT 0,
-      note TEXT,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE,
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
-  // Migration: quizLogs.createdDate -> quizLogs.createdAt
+  // Migration: Drop quizzes table if it exists (quiz data moved to items table)
   try {
-    const cols = await db.all("PRAGMA table_info('quizLogs')");
+    const tables = await db.all(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='quizzes'"
+    );
+    if (tables.length > 0) {
+      await db.exec("DROP TABLE quizzes;");
+    }
+  } catch (e) {}
+  // Migration: itemLogs table rename from quizLogs and column updates
+  try {
+    const tables = await db.all(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='quizLogs'"
+    );
+    if (tables.length > 0) {
+      // Rename quizLogs to itemLogs
+      await db.exec("ALTER TABLE quizLogs RENAME TO itemLogs;");
+      // Rename quizId column to itemId if it exists
+      const cols = await db.all("PRAGMA table_info('itemLogs')");
+      const hasQuizId = cols.some((c) => c.name === "quizId");
+      if (hasQuizId) {
+        await db.exec("ALTER TABLE itemLogs RENAME COLUMN quizId TO itemId;");
+      }
+    }
+  } catch (e) {}
+  // Migration: itemLogs.createdDate -> itemLogs.createdAt
+  try {
+    const cols = await db.all("PRAGMA table_info('itemLogs')");
     const hasCreatedAt = cols.some((c) => c.name === "createdAt");
     const hasCreatedDate = cols.some((c) => c.name === "createdDate");
     if (!hasCreatedAt && hasCreatedDate) {
       try {
         await db.exec(
-          "ALTER TABLE quizLogs RENAME COLUMN createdDate TO createdAt;"
+          "ALTER TABLE itemLogs RENAME COLUMN createdDate TO createdAt;"
         );
       } catch (e) {
-        await db.exec("ALTER TABLE quizLogs ADD COLUMN createdAt DATETIME;");
+        await db.exec("ALTER TABLE itemLogs ADD COLUMN createdAt DATETIME;");
         await db.exec(
-          "UPDATE quizLogs SET createdAt = COALESCE(createdDate, CURRENT_TIMESTAMP) WHERE createdAt IS NULL;"
+          "UPDATE itemLogs SET createdAt = COALESCE(createdDate, CURRENT_TIMESTAMP) WHERE createdAt IS NULL;"
         );
       }
     }
   } catch (e) {}
-  // Migration: questLogs.createdDate -> questLogs.createdAt
+  // Migration: Drop questLogs table if it exists
   try {
-    const cols = await db.all("PRAGMA table_info('questLogs')");
-    const hasCreatedAt = cols.some((c) => c.name === "createdAt");
-    const hasCreatedDate = cols.some((c) => c.name === "createdDate");
-    const hasDone = cols.some((c) => c.name === "done");
-    if (!hasCreatedAt && hasCreatedDate) {
-      try {
-        await db.exec(
-          "ALTER TABLE questLogs RENAME COLUMN createdDate TO createdAt;"
-        );
-      } catch (e) {
-        await db.exec("ALTER TABLE questLogs ADD COLUMN createdAt DATETIME;");
-        await db.exec(
-          "UPDATE questLogs SET createdAt = COALESCE(createdDate, CURRENT_TIMESTAMP) WHERE createdAt IS NULL;"
-        );
-      }
-    }
-    if (!hasDone) {
-      await db.exec("ALTER TABLE questLogs ADD COLUMN done INTEGER DEFAULT 0;");
-      await db.exec("UPDATE questLogs SET done = 0 WHERE done IS NULL;");
+    const tables = await db.all(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='questLogs'"
+    );
+    if (tables.length > 0) {
+      await db.exec("DROP TABLE questLogs;");
     }
   } catch (e) {}
   return db;
