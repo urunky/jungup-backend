@@ -5,7 +5,7 @@ const path = require("path");
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "..", "..", "public", "img", "answers"));
+    cb(null, path.join(__dirname, "..", "..", "public", "img", "items"));
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -56,16 +56,17 @@ function createRouter(db) {
       question,
       quizType,
       content,
+      interests,
     } = req.body;
     if (!name) return res.status(400).json({ error: "name is required" });
 
     // Use uploaded file path if file was uploaded, otherwise use answerImage from body
     const finalAnswerImage = req.file
-      ? `/img/answers/${req.file.filename}`
+      ? `/img/items/${req.file.filename}`
       : answerImage ?? null;
 
     const result = await db.run(
-      "INSERT INTO items (name, description, stair, x, y, img1, img2, img3, score, opt1, opt2, opt3, opt4, answer, answerImage, question, quizType, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO items (name, description, stair, x, y, img1, img2, img3, score, opt1, opt2, opt3, opt4, answer, answerImage, question, quizType, content, interests) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         name,
         description ?? null,
@@ -85,6 +86,7 @@ function createRouter(db) {
         question ?? null,
         quizType ?? null,
         content ?? null,
+        interests ?? null,
       ]
     );
     const item = await db.get("SELECT * FROM items WHERE id = ?", [
@@ -186,15 +188,16 @@ function createRouter(db) {
       question,
       quizType,
       content,
+      interests,
     } = req.body;
 
     // Use uploaded file path if file was uploaded, otherwise use answerImage from body or existing value
     const finalAnswerImage = req.file
-      ? `/img/answers/${req.file.filename}`
+      ? `/img/items/${req.file.filename}`
       : answerImage ?? existing.answerImage;
 
     const info = await db.run(
-      "UPDATE items SET name = ?, description = ?, stair = ?, x = ?, y = ?, img1 = ?, img2 = ?, img3 = ?, score = ?, opt1 = ?, opt2 = ?, opt3 = ?, opt4 = ?, answer = ?, answerImage = ?, question = ?, quizType = ?, content = ? WHERE id = ?",
+      "UPDATE items SET name = ?, description = ?, stair = ?, x = ?, y = ?, img1 = ?, img2 = ?, img3 = ?, score = ?, opt1 = ?, opt2 = ?, opt3 = ?, opt4 = ?, answer = ?, answerImage = ?, question = ?, quizType = ?, content = ?, interests = ? WHERE id = ?",
       [
         name ?? existing.name,
         description ?? existing.description,
@@ -214,6 +217,7 @@ function createRouter(db) {
         question ?? existing.question,
         quizType ?? existing.quizType,
         content ?? existing.content,
+        interests ?? existing.interests,
         id,
       ]
     );

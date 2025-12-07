@@ -1,32 +1,92 @@
 const express = require("express");
+const multer = require("multer");
+const path = require("path");
+// const sharp = require("sharp");
+const fs = require("fs").promises;
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, "..", "..", "public", "img", "answers"));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Only image files are allowed"));
+  },
+});
 
 function createRouter(db) {
   const router = express.Router();
 
   // Create itemLog
-  router.post("/", async (req, res) => {
-    const { itemId, userId, answer, imageData, imageMimeType } = req.body;
+  router.post("/", upload.single("image"), async (req, res) => {
+    const { itemId, userId, answer } = req.body;
     // validate item and user exist
+    console.log("itemId", itemId, "userId", userId);
     const item = await db.get("SELECT id FROM items WHERE id = ?", [itemId]);
     if (!item) return res.status(400).json({ error: "invalid itemId" });
     const user = await db.get("SELECT id FROM users WHERE id = ?", [userId]);
     if (!user) return res.status(400).json({ error: "invalid userId" });
 
-    // Validate image data if provided
-    if (imageData && !imageMimeType) {
-      return res.status(400).json({
-        error: "imageMimeType is required when imageData is provided",
-      });
-    }
-    if (!imageData && imageMimeType) {
-      return res.status(400).json({
-        error: "imageData is required when imageMimeType is provided",
-      });
+    let imageUrl = null;
+
+    // Use uploaded file path if file was uploaded
+    if (req.file) {
+      imageUrl = `/img/answers/${req.file.filename}`;
+
+      // TODO: Enable sharp image processing later
+      /*
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const filename = uniqueSuffix + ".jpg";
+      const outputPath = path.join(
+        __dirname,
+        "..",
+        "..",
+        "public",
+        "img",
+        "answers",
+        filename
+      );
+
+      try {
+        // Resize and compress image
+        await sharp(req.file.buffer)
+          .resize(800, null, {
+            fit: "inside",
+            withoutEnlargement: true,
+          })
+          .jpeg({ quality: 80 })
+          .toFile(outputPath);
+
+        imageUrl = `/img/answers/${filename}`;
+      } catch (err) {
+        console.error("Image processing error:", err);
+        return res.status(500).json({ error: "Failed to process image" });
+      }
+      */
     }
 
     const result = await db.run(
-      "INSERT INTO itemLogs (itemId, userId, answer, imageData, imageMimeType) VALUES (?, ?, ?, ?, ?)",
-      [itemId, userId, answer || null, imageData || null, imageMimeType || null]
+      "INSERT INTO itemLogs (itemId, userId, answer, imageData) VALUES (?, ?, ?, ?)",
+      [itemId, userId, answer || null, imageUrl]
     );
     const row = await db.get("SELECT * FROM itemLogs WHERE id = ?", [
       result.lastID,

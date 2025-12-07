@@ -42,6 +42,7 @@ async function init() {
       question TEXT,
       quizType TEXT,
       content BLOB,
+      interests TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -96,6 +97,7 @@ async function init() {
     const hasQuestion = cols.some((c) => c.name === "question");
     const hasQuizType = cols.some((c) => c.name === "quizType");
     const hasContent = cols.some((c) => c.name === "content");
+    const hasInterests = cols.some((c) => c.name === "interests");
     if (!hasImg1) {
       await db.exec("ALTER TABLE items ADD COLUMN img1 TEXT;");
     }
@@ -135,16 +137,20 @@ async function init() {
     if (!hasContent) {
       await db.exec("ALTER TABLE items ADD COLUMN content TEXT;");
     }
+    if (!hasInterests) {
+      await db.exec("ALTER TABLE items ADD COLUMN interests TEXT;");
+    }
   } catch (e) {}
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       age INTEGER,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      interest TEXT,
+      interests TEXT,
       rewarded INTEGER DEFAULT 0,
       grade TEXT,
-      area TEXT
+      area TEXT,
+      quests TEXT
     );
   `);
   // Migration: users.createdDate -> users.createdAt
@@ -152,9 +158,12 @@ async function init() {
     const cols = await db.all("PRAGMA table_info('users')");
     const hasCreatedAt = cols.some((c) => c.name === "createdAt");
     const hasCreatedDate = cols.some((c) => c.name === "createdDate");
+    const hasInterests = cols.some((c) => c.name === "interests");
+    const hasInterest = cols.some((c) => c.name === "interest");
     const hasRewarded = cols.some((c) => c.name === "rewarded");
     const hasGrade = cols.some((c) => c.name === "grade");
     const hasArea = cols.some((c) => c.name === "area");
+    const hasQuests = cols.some((c) => c.name === "quests");
     if (!hasCreatedAt && hasCreatedDate) {
       try {
         await db.exec(
@@ -167,6 +176,16 @@ async function init() {
         );
       }
     }
+    if (!hasInterests && hasInterest) {
+      try {
+        await db.exec("ALTER TABLE users RENAME COLUMN interest TO interests;");
+      } catch (e) {
+        await db.exec("ALTER TABLE users ADD COLUMN interests TEXT;");
+        await db.exec(
+          "UPDATE users SET interests = interest WHERE interests IS NULL;"
+        );
+      }
+    }
     if (!hasRewarded) {
       await db.exec("ALTER TABLE users ADD COLUMN rewarded INTEGER DEFAULT 0;");
     }
@@ -176,6 +195,9 @@ async function init() {
     if (!hasArea) {
       await db.exec("ALTER TABLE users ADD COLUMN area TEXT;");
     }
+    if (!hasQuests) {
+      await db.exec("ALTER TABLE users ADD COLUMN quests TEXT;");
+    }
   } catch (e) {}
   await db.exec(`
     CREATE TABLE IF NOT EXISTS itemLogs (
@@ -184,7 +206,6 @@ async function init() {
       userId INTEGER NOT NULL,
       answer INTEGER,
       imageData TEXT,
-      imageMimeType TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE,
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE

@@ -33,6 +33,8 @@ async function createApp() {
   api.use("/users", createUsersRouter(db));
   const createItemLogsRouter = require("./routes/itemlogs");
   api.use("/itemlogs", createItemLogsRouter(db));
+  const createUploadRouter = require("./routes/upload");
+  api.use("/upload", createUploadRouter());
   api.get("/", (req, res) => res.json({ status: "ok" }));
   app.use("/api", api);
   return app;

@@ -6,41 +6,21 @@ function createRouter(db) {
 
   // Create user
   router.post("/", async (req, res) => {
-    const { age, interest, rewarded, grade, area } = req.body;
+    const { age, interests, rewarded, grade, area, quests } = req.body;
     const result = await db.run(
-      "INSERT INTO users (age, interest, rewarded, grade, area) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO users (age, interests, rewarded, grade, area, quests) VALUES (?, ?, ?, ?, ?, ?)",
       [
         age || null,
-        interest || null,
+        interests || null,
         rewarded != null ? rewarded : 0,
         grade || null,
         area || null,
+        quests || null,
       ]
     );
     const user = await db.get("SELECT * FROM users WHERE id = ?", [
       result.lastID,
     ]);
-
-    // Create 10 quest logs for random items for this user (done=false)
-    try {
-      const items = await db.all(
-        "SELECT id FROM items ORDER BY RANDOM() LIMIT 10"
-      );
-      if (items && items.length > 0) {
-        const stmt = await db.prepare(
-          "INSERT INTO questLogs (itemId, userId, done) VALUES (?, ?, ?)"
-        );
-        try {
-          for (const it of items) {
-            await stmt.run(it.id, user.id, 0);
-          }
-        } finally {
-          await stmt.finalize();
-        }
-      }
-    } catch (e) {
-      // Ignore quest log generation errors to not block user creation
-    }
 
     // 인증 토큰 생성 (간단한 예시: userId + 랜덤)
     const token = crypto.randomBytes(16).toString("hex") + "-" + user.id;
@@ -48,14 +28,14 @@ function createRouter(db) {
       httpOnly: true,
       secure: false, // 개발환경은 false, 운영은 true(https)
       sameSite: "lax",
-      maxAge: 3 * 60 * 60 * 1000, // 3시간
+      maxAge: 12 * 60 * 60 * 1000, // 12시간
     });
     // userId를 쿠키에 저장
     res.cookie("userId", user.id, {
       httpOnly: false, // JS에서 읽을 수 있도록
       secure: false,
       sameSite: "lax",
-      maxAge: 3 * 60 * 60 * 1000,
+      maxAge: 12 * 60 * 60 * 1000, // 12시간
     });
     res.status(201).json(user);
   });
@@ -101,49 +81,40 @@ function createRouter(db) {
     res.json(row);
   });
 
-  // Read user's questLogs
-  router.get("/:id/questLogs", async (req, res) => {
+  // Read user's itemLogs
+  router.get("/:id/itemLogs", async (req, res) => {
     const id = Number(req.params.id);
-    console.log("id", id);
     const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
     if (!user) return res.status(404).json({ error: "not found" });
-    console.log("user", user);
+
     // Optional filters
-    const { done, itemId } = req.query;
+    const { itemId } = req.query;
     const params = [id];
-    let where = "WHERE q.userId = ?";
-    if (done !== undefined) {
-      // Accept true/false/1/0 strings
-      const v = String(done).toLowerCase();
-      const doneVal = v === "true" || v === "1" ? 1 : 0;
-      where += " AND q.done = ?";
-      params.push(doneVal);
-    }
+    let where = "WHERE l.userId = ?";
     if (itemId !== undefined) {
-      where += " AND q.itemId = ?";
+      where += " AND l.itemId = ?";
       params.push(Number(itemId));
     }
 
-    // Return questLogs joined with items for itemName, newest first
+    // Return itemLogs joined with items for itemName, newest first
     const rows = await db.all(
-      `SELECT q.*, i.name AS itemName
-       FROM questLogs q
-       JOIN items i ON i.id = q.itemId
+      `SELECT l.*, i.name AS itemName
+       FROM itemLogs l
+       JOIN items i ON i.id = l.itemId
        ${where}
-       ORDER BY q.id DESC`,
+       ORDER BY l.id DESC`,
       params
     );
-    console.log("rows", rows);
     res.json(rows);
   });
 
   // Update
   router.put("/:id", async (req, res) => {
     const id = Number(req.params.id);
-    const { age, interest, rewarded, grade, area } = req.body;
+    const { age, interests, rewarded, grade, area, quests } = req.body;
     const info = await db.run(
-      "UPDATE users SET age = ?, interest = ?, rewarded = ?, grade = ?, area = ? WHERE id = ?",
-      [age, interest, rewarded != null ? rewarded : 0, grade, area, id]
+      "UPDATE users SET age = ?, interests = ?, rewarded = ?, grade = ?, area = ?, quests = ? WHERE id = ?",
+      [age, interests, rewarded != null ? rewarded : 0, grade, area, quests, id]
     );
     if (info.changes === 0) return res.status(404).json({ error: "not found" });
     const row = await db.get("SELECT * FROM users WHERE id = ?", [id]);
