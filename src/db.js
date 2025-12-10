@@ -38,7 +38,6 @@ async function init() {
       opt3 TEXT,
       opt4 TEXT,
       answer TEXT,
-      answerImage TEXT,
       question TEXT,
       quizType TEXT,
       content BLOB,
@@ -93,7 +92,6 @@ async function init() {
     const hasOpt3 = cols.some((c) => c.name === "opt3");
     const hasOpt4 = cols.some((c) => c.name === "opt4");
     const hasAnswer = cols.some((c) => c.name === "answer");
-    const hasAnswerImage = cols.some((c) => c.name === "answerImage");
     const hasQuestion = cols.some((c) => c.name === "question");
     const hasQuizType = cols.some((c) => c.name === "quizType");
     const hasContent = cols.some((c) => c.name === "content");
@@ -124,9 +122,6 @@ async function init() {
     }
     if (!hasAnswer) {
       await db.exec("ALTER TABLE items ADD COLUMN answer TEXT;");
-    }
-    if (!hasAnswerImage) {
-      await db.exec("ALTER TABLE items ADD COLUMN answerImage TEXT;");
     }
     if (!hasQuestion) {
       await db.exec("ALTER TABLE items ADD COLUMN question TEXT;");
@@ -204,8 +199,7 @@ async function init() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       itemId INTEGER NOT NULL,
       userId INTEGER NOT NULL,
-      answer INTEGER,
-      imageData TEXT,
+      answer TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE,
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
@@ -252,6 +246,32 @@ async function init() {
           "UPDATE itemLogs SET createdAt = COALESCE(createdDate, CURRENT_TIMESTAMP) WHERE createdAt IS NULL;"
         );
       }
+    }
+  } catch (e) {}
+  // Migration: Remove imageData and imageMimeType columns from itemLogs
+  try {
+    const cols = await db.all("PRAGMA table_info('itemLogs')");
+    const hasImageData = cols.some((c) => c.name === "imageData");
+    const hasImageMimeType = cols.some((c) => c.name === "imageMimeType");
+    if (hasImageData || hasImageMimeType) {
+      // SQLite doesn't support DROP COLUMN directly, need to recreate table
+      await db.exec(`
+        CREATE TABLE itemLogs_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          itemId INTEGER NOT NULL,
+          userId INTEGER NOT NULL,
+          answer TEXT,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+        );
+      `);
+      await db.exec(`
+        INSERT INTO itemLogs_new (id, itemId, userId, answer, createdAt)
+        SELECT id, itemId, userId, answer, createdAt FROM itemLogs;
+      `);
+      await db.exec("DROP TABLE itemLogs;");
+      await db.exec("ALTER TABLE itemLogs_new RENAME TO itemLogs;");
     }
   } catch (e) {}
   // Migration: Drop questLogs table if it exists

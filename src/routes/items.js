@@ -52,7 +52,6 @@ function createRouter(db) {
       opt3,
       opt4,
       answer,
-      answerImage,
       question,
       quizType,
       content,
@@ -60,13 +59,8 @@ function createRouter(db) {
     } = req.body;
     if (!name) return res.status(400).json({ error: "name is required" });
 
-    // Use uploaded file path if file was uploaded, otherwise use answerImage from body
-    const finalAnswerImage = req.file
-      ? `/img/items/${req.file.filename}`
-      : answerImage ?? null;
-
     const result = await db.run(
-      "INSERT INTO items (name, description, stair, x, y, img1, img2, img3, score, opt1, opt2, opt3, opt4, answer, answerImage, question, quizType, content, interests) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO items (name, description, stair, x, y, img1, img2, img3, score, opt1, opt2, opt3, opt4, answer, question, quizType, content, interests) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         name,
         description ?? null,
@@ -81,8 +75,7 @@ function createRouter(db) {
         opt2 ?? null,
         opt3 ?? null,
         opt4 ?? null,
-        answer ?? null,
-        finalAnswerImage,
+        req.file ? `/img/items/${req.file.filename}` : answer ?? null,
         question ?? null,
         quizType ?? null,
         content ?? null,
@@ -184,20 +177,14 @@ function createRouter(db) {
       opt3,
       opt4,
       answer,
-      answerImage,
       question,
       quizType,
       content,
       interests,
     } = req.body;
 
-    // Use uploaded file path if file was uploaded, otherwise use answerImage from body or existing value
-    const finalAnswerImage = req.file
-      ? `/img/items/${req.file.filename}`
-      : answerImage ?? existing.answerImage;
-
     const info = await db.run(
-      "UPDATE items SET name = ?, description = ?, stair = ?, x = ?, y = ?, img1 = ?, img2 = ?, img3 = ?, score = ?, opt1 = ?, opt2 = ?, opt3 = ?, opt4 = ?, answer = ?, answerImage = ?, question = ?, quizType = ?, content = ?, interests = ? WHERE id = ?",
+      "UPDATE items SET name = ?, description = ?, stair = ?, x = ?, y = ?, img1 = ?, img2 = ?, img3 = ?, score = ?, opt1 = ?, opt2 = ?, opt3 = ?, opt4 = ?, answer = ?, question = ?, quizType = ?, content = ?, interests = ? WHERE id = ?",
       [
         name ?? existing.name,
         description ?? existing.description,
@@ -212,8 +199,9 @@ function createRouter(db) {
         opt2 ?? existing.opt2,
         opt3 ?? existing.opt3,
         opt4 ?? existing.opt4,
-        answer ?? existing.answer,
-        finalAnswerImage,
+        req.file
+          ? `/img/items/${req.file.filename}`
+          : answer ?? existing.answer,
         question ?? existing.question,
         quizType ?? existing.quizType,
         content ?? existing.content,

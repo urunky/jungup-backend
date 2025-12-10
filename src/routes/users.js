@@ -90,19 +90,14 @@ function createRouter(db) {
     // Optional filters
     const { itemId } = req.query;
     const params = [id];
-    let where = "WHERE l.userId = ?";
+    let where = "WHERE userId = ?";
     if (itemId !== undefined) {
-      where += " AND l.itemId = ?";
+      where += " AND itemId = ?";
       params.push(Number(itemId));
     }
 
-    // Return itemLogs joined with items for itemName, newest first
     const rows = await db.all(
-      `SELECT l.*, i.name AS itemName
-       FROM itemLogs l
-       JOIN items i ON i.id = l.itemId
-       ${where}
-       ORDER BY l.id DESC`,
+      `SELECT * FROM itemLogs ${where} ORDER BY id DESC`,
       params
     );
     res.json(rows);

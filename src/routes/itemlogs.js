@@ -38,7 +38,8 @@ function createRouter(db) {
 
   // Create itemLog
   router.post("/", upload.single("image"), async (req, res) => {
-    const { itemId, userId, answer } = req.body;
+    let { itemId, userId, answer } = req.body;
+    if (answer === "null") answer = null;
     // validate item and user exist
     console.log("itemId", itemId, "userId", userId);
     const item = await db.get("SELECT id FROM items WHERE id = ?", [itemId]);
@@ -85,8 +86,8 @@ function createRouter(db) {
     }
 
     const result = await db.run(
-      "INSERT INTO itemLogs (itemId, userId, answer, imageData) VALUES (?, ?, ?, ?)",
-      [itemId, userId, answer || null, imageUrl]
+      "INSERT INTO itemLogs (itemId, userId, answer) VALUES (?, ?, ?)",
+      [itemId, userId, answer || imageUrl]
     );
     const row = await db.get("SELECT * FROM itemLogs WHERE id = ?", [
       result.lastID,
