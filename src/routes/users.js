@@ -6,9 +6,9 @@ function createRouter(db) {
 
   // Create user
   router.post("/", async (req, res) => {
-    const { age, interests, rewarded, grade, area, quests } = req.body;
+    const { age, interests, rewarded, grade, area, quests, again } = req.body;
     const result = await db.run(
-      "INSERT INTO users (age, interests, rewarded, grade, area, quests) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO users (age, interests, rewarded, grade, area, quests, again) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         age || null,
         interests || null,
@@ -16,6 +16,7 @@ function createRouter(db) {
         grade || null,
         area || null,
         quests || null,
+        again != null ? again : 0,
       ]
     );
     const user = await db.get("SELECT * FROM users WHERE id = ?", [
@@ -106,10 +107,19 @@ function createRouter(db) {
   // Update
   router.put("/:id", async (req, res) => {
     const id = Number(req.params.id);
-    const { age, interests, rewarded, grade, area, quests } = req.body;
+    const { age, interests, rewarded, grade, area, quests, again } = req.body;
     const info = await db.run(
-      "UPDATE users SET age = ?, interests = ?, rewarded = ?, grade = ?, area = ?, quests = ? WHERE id = ?",
-      [age, interests, rewarded != null ? rewarded : 0, grade, area, quests, id]
+      "UPDATE users SET age = ?, interests = ?, rewarded = ?, grade = ?, area = ?, quests = ?, again = ? WHERE id = ?",
+      [
+        age,
+        interests,
+        rewarded != null ? rewarded : 0,
+        grade,
+        area,
+        quests,
+        again != null ? again : 0,
+        id,
+      ]
     );
     if (info.changes === 0) return res.status(404).json({ error: "not found" });
     const row = await db.get("SELECT * FROM users WHERE id = ?", [id]);

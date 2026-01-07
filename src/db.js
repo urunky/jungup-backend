@@ -29,9 +29,20 @@ async function init() {
       stair INTEGER,
       x INTEGER DEFAULT 0,
       y INTEGER DEFAULT 0,
-      img1 TEXT,
-      img2 TEXT,
-      img3 TEXT,
+      q1 TEXT,
+      o11 TEXT,
+      o12 TEXT,
+      o13 TEXT,
+      o14 TEXT,
+      a1 TEXT,
+      quizType1 TEXT,
+      q2 TEXT,
+      o21 TEXT,
+      o22 TEXT,
+      o23 TEXT,
+      o24 TEXT,
+      a2 TEXT,
+      quizType2 TEXT,
       score INTEGER DEFAULT 0,
       opt1 TEXT,
       opt2 TEXT,
@@ -42,6 +53,7 @@ async function init() {
       quizType TEXT,
       content BLOB,
       interests TEXT,
+      code TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -80,12 +92,23 @@ async function init() {
       await db.exec("UPDATE items SET y = 0 WHERE y IS NULL;");
     }
   } catch (e) {}
-  // Migration: add img1, img2, img3 columns if missing
+  // Migration: ensure other item columns exist (do not add img1/img2/img3)
   try {
     const cols = await db.all("PRAGMA table_info('items')");
-    const hasImg1 = cols.some((c) => c.name === "img1");
-    const hasImg2 = cols.some((c) => c.name === "img2");
-    const hasImg3 = cols.some((c) => c.name === "img3");
+    const hasQ1 = cols.some((c) => c.name === "q1");
+    const hasO11 = cols.some((c) => c.name === "o11");
+    const hasO12 = cols.some((c) => c.name === "o12");
+    const hasO13 = cols.some((c) => c.name === "o13");
+    const hasO14 = cols.some((c) => c.name === "o14");
+    const hasA1 = cols.some((c) => c.name === "a1");
+    const hasQuizType1 = cols.some((c) => c.name === "quizType1");
+    const hasQ2 = cols.some((c) => c.name === "q2");
+    const hasO21 = cols.some((c) => c.name === "o21");
+    const hasO22 = cols.some((c) => c.name === "o22");
+    const hasO23 = cols.some((c) => c.name === "o23");
+    const hasO24 = cols.some((c) => c.name === "o24");
+    const hasA2 = cols.some((c) => c.name === "a2");
+    const hasQuizType2 = cols.some((c) => c.name === "quizType2");
     const hasScore = cols.some((c) => c.name === "score");
     const hasOpt1 = cols.some((c) => c.name === "opt1");
     const hasOpt2 = cols.some((c) => c.name === "opt2");
@@ -96,14 +119,47 @@ async function init() {
     const hasQuizType = cols.some((c) => c.name === "quizType");
     const hasContent = cols.some((c) => c.name === "content");
     const hasInterests = cols.some((c) => c.name === "interests");
-    if (!hasImg1) {
-      await db.exec("ALTER TABLE items ADD COLUMN img1 TEXT;");
+    if (!hasQ1) {
+      await db.exec("ALTER TABLE items ADD COLUMN q1 TEXT;");
     }
-    if (!hasImg2) {
-      await db.exec("ALTER TABLE items ADD COLUMN img2 TEXT;");
+    if (!hasO11) {
+      await db.exec("ALTER TABLE items ADD COLUMN o11 TEXT;");
     }
-    if (!hasImg3) {
-      await db.exec("ALTER TABLE items ADD COLUMN img3 TEXT;");
+    if (!hasO12) {
+      await db.exec("ALTER TABLE items ADD COLUMN o12 TEXT;");
+    }
+    if (!hasO13) {
+      await db.exec("ALTER TABLE items ADD COLUMN o13 TEXT;");
+    }
+    if (!hasO14) {
+      await db.exec("ALTER TABLE items ADD COLUMN o14 TEXT;");
+    }
+    if (!hasA1) {
+      await db.exec("ALTER TABLE items ADD COLUMN a1 TEXT;");
+    }
+    if (!hasQuizType1) {
+      await db.exec("ALTER TABLE items ADD COLUMN quizType1 TEXT;");
+    }
+    if (!hasQ2) {
+      await db.exec("ALTER TABLE items ADD COLUMN q2 TEXT;");
+    }
+    if (!hasO21) {
+      await db.exec("ALTER TABLE items ADD COLUMN o21 TEXT;");
+    }
+    if (!hasO22) {
+      await db.exec("ALTER TABLE items ADD COLUMN o22 TEXT;");
+    }
+    if (!hasO23) {
+      await db.exec("ALTER TABLE items ADD COLUMN o23 TEXT;");
+    }
+    if (!hasO24) {
+      await db.exec("ALTER TABLE items ADD COLUMN o24 TEXT;");
+    }
+    if (!hasA2) {
+      await db.exec("ALTER TABLE items ADD COLUMN a2 TEXT;");
+    }
+    if (!hasQuizType2) {
+      await db.exec("ALTER TABLE items ADD COLUMN quizType2 TEXT;");
     }
     if (!hasScore) {
       await db.exec("ALTER TABLE items ADD COLUMN score INTEGER DEFAULT 0;");
@@ -136,6 +192,66 @@ async function init() {
       await db.exec("ALTER TABLE items ADD COLUMN interests TEXT;");
     }
   } catch (e) {}
+  // Migration: add code column if missing
+  try {
+    const cols = await db.all("PRAGMA table_info('items')");
+    const hasCode = cols.some((c) => c.name === "code");
+    if (!hasCode) {
+      await db.exec("ALTER TABLE items ADD COLUMN code TEXT;");
+    }
+  } catch (e) {}
+
+  // Migration: remove img1/img2/img3 columns if they exist (recreate table)
+  try {
+    const cols = await db.all("PRAGMA table_info('items')");
+    const hasImg1 = cols.some((c) => c.name === "img1");
+    const hasImg2 = cols.some((c) => c.name === "img2");
+    const hasImg3 = cols.some((c) => c.name === "img3");
+    if (hasImg1 || hasImg2 || hasImg3) {
+      await db.exec(`
+        CREATE TABLE items_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          stair INTEGER,
+          x INTEGER DEFAULT 0,
+          y INTEGER DEFAULT 0,
+          q1 TEXT,
+          o11 TEXT,
+          o12 TEXT,
+          o13 TEXT,
+          o14 TEXT,
+          a1 TEXT,
+          quizType1 TEXT,
+          q2 TEXT,
+          o21 TEXT,
+          o22 TEXT,
+          o23 TEXT,
+          o24 TEXT,
+          a2 TEXT,
+          quizType2 TEXT,
+          score INTEGER DEFAULT 0,
+          opt1 TEXT,
+          opt2 TEXT,
+          opt3 TEXT,
+          opt4 TEXT,
+          answer TEXT,
+          question TEXT,
+          quizType TEXT,
+          content BLOB,
+          interests TEXT,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await db.exec(`
+        INSERT INTO items_new (id, name, description, stair, x, y, q1, o11, o12, o13, o14, a1, quizType1, q2, o21, o22, o23, o24, a2, quizType2, score, opt1, opt2, opt3, opt4, answer, question, quizType, content, interests, createdAt)
+        SELECT id, name, description, stair, x, y, q1, o11, o12, o13, o14, a1, quizType1, q2, o21, o22, o23, o24, a2, quizType2, score, opt1, opt2, opt3, opt4, answer, question, quizType, content, interests, COALESCE(createdAt, CURRENT_TIMESTAMP)
+        FROM items;
+      `);
+      await db.exec("DROP TABLE items;");
+      await db.exec("ALTER TABLE items_new RENAME TO items;");
+    }
+  } catch (e) {}
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -145,7 +261,8 @@ async function init() {
       rewarded INTEGER DEFAULT 0,
       grade TEXT,
       area TEXT,
-      quests TEXT
+      quests TEXT,
+      again INTEGER DEFAULT 0
     );
   `);
   // Migration: users.createdDate -> users.createdAt
@@ -159,6 +276,7 @@ async function init() {
     const hasGrade = cols.some((c) => c.name === "grade");
     const hasArea = cols.some((c) => c.name === "area");
     const hasQuests = cols.some((c) => c.name === "quests");
+    const hasAgain = cols.some((c) => c.name === "again");
     if (!hasCreatedAt && hasCreatedDate) {
       try {
         await db.exec(
@@ -192,6 +310,9 @@ async function init() {
     }
     if (!hasQuests) {
       await db.exec("ALTER TABLE users ADD COLUMN quests TEXT;");
+    }
+    if (!hasAgain) {
+      await db.exec("ALTER TABLE users ADD COLUMN again INTEGER DEFAULT 0;");
     }
   } catch (e) {}
   await db.exec(`
@@ -283,6 +404,16 @@ async function init() {
       await db.exec("DROP TABLE questLogs;");
     }
   } catch (e) {}
+
+  // Create interests table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS interests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   return db;
 }
 

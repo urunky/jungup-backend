@@ -32,61 +32,110 @@ const upload = multer({
   },
 });
 
+// Helper: support upload.multiple(...) as a thin wrapper around multer.array
+upload.multiple = function (fieldName, maxCount) {
+  return upload.array(fieldName, maxCount || 10);
+};
+
 function createRouter(db) {
   const router = express.Router();
 
   // Create item
-  router.post("/", upload.single("file"), async (req, res) => {
-    const {
-      name,
-      description,
-      stair,
-      x,
-      y,
-      img1,
-      img2,
-      img3,
-      score,
-      opt1,
-      opt2,
-      opt3,
-      opt4,
-      answer,
-      question,
-      quizType,
-      content,
-      interests,
-    } = req.body;
-    if (!name) return res.status(400).json({ error: "name is required" });
-
-    const result = await db.run(
-      "INSERT INTO items (name, description, stair, x, y, img1, img2, img3, score, opt1, opt2, opt3, opt4, answer, question, quizType, content, interests) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [
+  router.post(
+    "/",
+    upload.fields([
+      { name: "file", maxCount: 1 },
+      { name: "file1", maxCount: 1 },
+      { name: "file2", maxCount: 1 },
+    ]),
+    async (req, res) => {
+      const {
         name,
-        description ?? null,
-        stair ?? null,
-        x ?? 0,
-        y ?? 0,
-        img1 ?? null,
-        img2 ?? null,
-        img3 ?? null,
-        score ?? 0,
-        opt1 ?? null,
-        opt2 ?? null,
-        opt3 ?? null,
-        opt4 ?? null,
-        req.file ? `/img/items/${req.file.filename}` : answer ?? null,
-        question ?? null,
-        quizType ?? null,
-        content ?? null,
-        interests ?? null,
-      ]
-    );
-    const item = await db.get("SELECT * FROM items WHERE id = ?", [
-      result.lastID,
-    ]);
-    res.status(201).json(item);
-  });
+        description,
+        stair,
+        x,
+        y,
+        q1,
+        o11,
+        o12,
+        o13,
+        o14,
+        a1,
+        quizType1,
+        q2,
+        o21,
+        o22,
+        o23,
+        o24,
+        a2,
+        quizType2,
+        score,
+        opt1,
+        opt2,
+        opt3,
+        opt4,
+        answer,
+        question,
+        quizType,
+        content,
+        interests,
+        code,
+      } = req.body;
+      if (!name) return res.status(400).json({ error: "name is required" });
+
+      const filePath0 =
+        req.files && req.files["file"] && req.files["file"][0]
+          ? `/img/items/${req.files["file"][0].filename}`
+          : null;
+      const filePath1 =
+        req.files && req.files["file1"] && req.files["file1"][0]
+          ? `/img/items/${req.files["file1"][0].filename}`
+          : null;
+      const filePath2 =
+        req.files && req.files["file2"] && req.files["file2"][0]
+          ? `/img/items/${req.files["file2"][0].filename}`
+          : null;
+      const result = await db.run(
+        "INSERT INTO items (name, description, stair, x, y, q1, o11, o12, o13, o14, a1, quizType1, q2, o21, o22, o23, o24, a2, quizType2, score, opt1, opt2, opt3, opt4, answer, question, quizType, content, interests, code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          name,
+          description ?? null,
+          stair ?? null,
+          x ?? 0,
+          y ?? 0,
+          q1 ?? null,
+          o11 ?? null,
+          o12 ?? null,
+          o13 ?? null,
+          o14 ?? null,
+          filePath1 ? filePath1 : a1 ?? null,
+          quizType1 ?? null,
+          q2 ?? null,
+          o21 ?? null,
+          o22 ?? null,
+          o23 ?? null,
+          o24 ?? null,
+          filePath2 ? filePath2 : a2 ?? null,
+          quizType2 ?? null,
+          score ?? 0,
+          opt1 ?? null,
+          opt2 ?? null,
+          opt3 ?? null,
+          opt4 ?? null,
+          filePath0 ? filePath0 : answer ?? null,
+          question ?? null,
+          quizType ?? null,
+          content ?? null,
+          interests ?? null,
+          code ?? null,
+        ]
+      );
+      const item = await db.get("SELECT * FROM items WHERE id = ?", [
+        result.lastID,
+      ]);
+      res.status(201).json(item);
+    }
+  );
 
   // Read all (with pagination and stair filter)
   router.get("/", async (req, res) => {
@@ -157,62 +206,106 @@ function createRouter(db) {
   });
 
   // Update
-  router.put("/:id", upload.single("file"), async (req, res) => {
-    const id = Number(req.params.id);
-    const existing = await db.get("SELECT * FROM items WHERE id = ?", [id]);
-    if (!existing) return res.status(404).json({ error: "not found" });
+  router.put(
+    "/:id",
+    upload.fields([
+      { name: "file", maxCount: 1 },
+      { name: "file1", maxCount: 1 },
+      { name: "file2", maxCount: 1 },
+    ]),
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const existing = await db.get("SELECT * FROM items WHERE id = ?", [id]);
+      if (!existing) return res.status(404).json({ error: "not found" });
 
-    const {
-      name,
-      description,
-      stair,
-      x,
-      y,
-      img1,
-      img2,
-      img3,
-      score,
-      opt1,
-      opt2,
-      opt3,
-      opt4,
-      answer,
-      question,
-      quizType,
-      content,
-      interests,
-    } = req.body;
+      const {
+        name,
+        description,
+        stair,
+        x,
+        y,
+        q1,
+        o11,
+        o12,
+        o13,
+        o14,
+        a1,
+        quizType1,
+        q2,
+        o21,
+        o22,
+        o23,
+        o24,
+        a2,
+        quizType2,
+        score,
+        opt1,
+        opt2,
+        opt3,
+        opt4,
+        answer,
+        question,
+        quizType,
+        content,
+        interests,
+        code,
+      } = req.body;
 
-    const info = await db.run(
-      "UPDATE items SET name = ?, description = ?, stair = ?, x = ?, y = ?, img1 = ?, img2 = ?, img3 = ?, score = ?, opt1 = ?, opt2 = ?, opt3 = ?, opt4 = ?, answer = ?, question = ?, quizType = ?, content = ?, interests = ? WHERE id = ?",
-      [
-        name ?? existing.name,
-        description ?? existing.description,
-        stair ?? existing.stair,
-        x ?? existing.x,
-        y ?? existing.y,
-        img1 ?? existing.img1,
-        img2 ?? existing.img2,
-        img3 ?? existing.img3,
-        score ?? existing.score,
-        opt1 ?? existing.opt1,
-        opt2 ?? existing.opt2,
-        opt3 ?? existing.opt3,
-        opt4 ?? existing.opt4,
-        req.file
-          ? `/img/items/${req.file.filename}`
-          : answer ?? existing.answer,
-        question ?? existing.question,
-        quizType ?? existing.quizType,
-        content ?? existing.content,
-        interests ?? existing.interests,
-        id,
-      ]
-    );
-    if (info.changes === 0) return res.status(404).json({ error: "not found" });
-    const row = await db.get("SELECT * FROM items WHERE id = ?", [id]);
-    res.json(row);
-  });
+      const filePath0 =
+        req.files && req.files["file"] && req.files["file"][0]
+          ? `/img/items/${req.files["file"][0].filename}`
+          : null;
+      const filePath1 =
+        req.files && req.files["file1"] && req.files["file1"][0]
+          ? `/img/items/${req.files["file1"][0].filename}`
+          : null;
+      const filePath2 =
+        req.files && req.files["file2"] && req.files["file2"][0]
+          ? `/img/items/${req.files["file2"][0].filename}`
+          : null;
+
+      const info = await db.run(
+        "UPDATE items SET name = ?, description = ?, stair = ?, x = ?, y = ?, q1 = ?, o11 = ?, o12 = ?, o13 = ?, o14 = ?, a1 = ?, quizType1 = ?, q2 = ?, o21 = ?, o22 = ?, o23 = ?, o24 = ?, a2 = ?, quizType2 = ?, score = ?, opt1 = ?, opt2 = ?, opt3 = ?, opt4 = ?, answer = ?, question = ?, quizType = ?, content = ?, interests = ?, code = ? WHERE id = ?",
+        [
+          name ?? existing.name,
+          description ?? existing.description,
+          stair ?? existing.stair,
+          x ?? existing.x,
+          y ?? existing.y,
+          q1 ?? existing.q1,
+          o11 ?? existing.o11,
+          o12 ?? existing.o12,
+          o13 ?? existing.o13,
+          o14 ?? existing.o14,
+          filePath1 ? filePath1 : a1 ?? existing.a1,
+          quizType1 ?? existing.quizType1,
+          q2 ?? existing.q2,
+          o21 ?? existing.o21,
+          o22 ?? existing.o22,
+          o23 ?? existing.o23,
+          o24 ?? existing.o24,
+          filePath2 ? filePath2 : a2 ?? existing.a2,
+          quizType2 ?? existing.quizType2,
+          score ?? existing.score,
+          opt1 ?? existing.opt1,
+          opt2 ?? existing.opt2,
+          opt3 ?? existing.opt3,
+          opt4 ?? existing.opt4,
+          filePath0 ? filePath0 : answer ?? existing.answer,
+          question ?? existing.question,
+          quizType ?? existing.quizType,
+          content ?? existing.content,
+          interests ?? existing.interests,
+          code ?? existing.code,
+          id,
+        ]
+      );
+      if (info.changes === 0)
+        return res.status(404).json({ error: "not found" });
+      const row = await db.get("SELECT * FROM items WHERE id = ?", [id]);
+      res.json(row);
+    }
+  );
 
   // Delete
   router.delete("/:id", async (req, res) => {

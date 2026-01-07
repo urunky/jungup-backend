@@ -33,8 +33,12 @@ async function createApp() {
   api.use("/users", createUsersRouter(db));
   const createItemLogsRouter = require("./routes/itemlogs");
   api.use("/itemlogs", createItemLogsRouter(db));
+  const createInterestsRouter = require("./routes/interests");
+  api.use("/interests", createInterestsRouter(db));
   const createUploadRouter = require("./routes/upload");
   api.use("/upload", createUploadRouter());
+  const createVideoRouter = require("./routes/video");
+  api.use("/video", createVideoRouter());
   api.get("/", (req, res) => res.json({ status: "ok" }));
   app.use("/api", api);
   return app;

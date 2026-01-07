@@ -95,9 +95,31 @@ function createRouter(db) {
     res.status(201).json(row);
   });
 
-  // Read all
+  // Read all (with optional filtering by userId or itemId)
   router.get("/", async (req, res) => {
-    const rows = await db.all("SELECT * FROM itemLogs ORDER BY id DESC");
+    const { userId, itemId } = req.query;
+
+    let query = "SELECT * FROM itemLogs";
+    const params = [];
+    const conditions = [];
+
+    if (userId) {
+      conditions.push("userId = ?");
+      params.push(userId);
+    }
+
+    if (itemId) {
+      conditions.push("itemId = ?");
+      params.push(itemId);
+    }
+
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
+    }
+
+    query += " ORDER BY id DESC";
+
+    const rows = await db.all(query, params);
     res.json(rows);
   });
 
