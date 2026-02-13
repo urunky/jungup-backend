@@ -22,7 +22,7 @@ const upload = multer({
   fileFilter: function (req, file, cb) {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase()
+      path.extname(file.originalname).toLowerCase(),
     );
     const mimetype = allowedTypes.test(file.mimetype);
     if (mimetype && extname) {
@@ -108,36 +108,36 @@ function createRouter(db) {
           o12 ?? null,
           o13 ?? null,
           o14 ?? null,
-          filePath1 ? filePath1 : a1 ?? null,
+          filePath1 ? filePath1 : (a1 ?? null),
           quizType1 ?? null,
           q2 ?? null,
           o21 ?? null,
           o22 ?? null,
           o23 ?? null,
           o24 ?? null,
-          filePath2 ? filePath2 : a2 ?? null,
+          filePath2 ? filePath2 : (a2 ?? null),
           quizType2 ?? null,
           score ?? 0,
           opt1 ?? null,
           opt2 ?? null,
           opt3 ?? null,
           opt4 ?? null,
-          filePath0 ? filePath0 : answer ?? null,
+          filePath0 ? filePath0 : (answer ?? null),
           question ?? null,
           quizType ?? null,
           content ?? null,
           interests ?? null,
           code ?? null,
-        ]
+        ],
       );
       const item = await db.get("SELECT * FROM items WHERE id = ?", [
         result.lastID,
       ]);
       res.status(201).json(item);
-    }
+    },
   );
 
-  // Read all (with pagination and stair filter)
+  // Read all (with pagination, stair filter, and name search)
   router.get("/", async (req, res) => {
     const hasPageSize = req.query.pageSize !== undefined;
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
@@ -148,38 +148,46 @@ function createRouter(db) {
     const offset = pageSize ? (page - 1) * pageSize : 0;
     const stair =
       req.query.stair !== undefined ? parseInt(req.query.stair, 10) : undefined;
+    const name = req.query.name ? req.query.name.trim() : undefined;
 
     let totalRow, total, totalPages, rows;
+    let whereConditions = [];
+    let queryParams = [];
+
+    // Build WHERE conditions
     if (stair !== undefined && !isNaN(stair)) {
-      totalRow = await db.get(
-        "SELECT COUNT(*) as cnt FROM items WHERE stair = ?",
-        [stair]
+      whereConditions.push("stair = ?");
+      queryParams.push(stair);
+    }
+    if (name) {
+      whereConditions.push("name LIKE ?");
+      queryParams.push(`%${name}%`);
+    }
+
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
+
+    // Get total count
+    totalRow = await db.get(
+      `SELECT COUNT(*) as cnt FROM items ${whereClause}`,
+      queryParams,
+    );
+    total = totalRow.cnt || 0;
+    totalPages = pageSize ? Math.max(Math.ceil(total / pageSize), 1) : 1;
+
+    // Get rows with pagination
+    if (pageSize) {
+      rows = await db.all(
+        `SELECT * FROM items ${whereClause} ORDER BY id DESC LIMIT ? OFFSET ?`,
+        [...queryParams, pageSize, offset],
       );
-      total = totalRow.cnt || 0;
-      totalPages = pageSize ? Math.max(Math.ceil(total / pageSize), 1) : 1;
-      if (pageSize) {
-        rows = await db.all(
-          "SELECT * FROM items WHERE stair = ? ORDER BY id DESC LIMIT ? OFFSET ?",
-          [stair, pageSize, offset]
-        );
-      } else {
-        rows = await db.all(
-          "SELECT * FROM items WHERE stair = ? ORDER BY id DESC",
-          [stair]
-        );
-      }
     } else {
-      totalRow = await db.get("SELECT COUNT(*) as cnt FROM items");
-      total = totalRow.cnt || 0;
-      totalPages = pageSize ? Math.max(Math.ceil(total / pageSize), 1) : 1;
-      if (pageSize) {
-        rows = await db.all(
-          "SELECT * FROM items ORDER BY id DESC LIMIT ? OFFSET ?",
-          [pageSize, offset]
-        );
-      } else {
-        rows = await db.all("SELECT * FROM items ORDER BY id DESC");
-      }
+      rows = await db.all(
+        `SELECT * FROM items ${whereClause} ORDER BY id DESC`,
+        queryParams,
+      );
     }
 
     // pagination headers (for compatibility)
@@ -277,34 +285,34 @@ function createRouter(db) {
           o12 ?? existing.o12,
           o13 ?? existing.o13,
           o14 ?? existing.o14,
-          filePath1 ? filePath1 : a1 ?? existing.a1,
+          filePath1 ? filePath1 : (a1 ?? existing.a1),
           quizType1 ?? existing.quizType1,
           q2 ?? existing.q2,
           o21 ?? existing.o21,
           o22 ?? existing.o22,
           o23 ?? existing.o23,
           o24 ?? existing.o24,
-          filePath2 ? filePath2 : a2 ?? existing.a2,
+          filePath2 ? filePath2 : (a2 ?? existing.a2),
           quizType2 ?? existing.quizType2,
           score ?? existing.score,
           opt1 ?? existing.opt1,
           opt2 ?? existing.opt2,
           opt3 ?? existing.opt3,
           opt4 ?? existing.opt4,
-          filePath0 ? filePath0 : answer ?? existing.answer,
+          filePath0 ? filePath0 : (answer ?? existing.answer),
           question ?? existing.question,
           quizType ?? existing.quizType,
           content ?? existing.content,
           interests ?? existing.interests,
           code ?? existing.code,
           id,
-        ]
+        ],
       );
       if (info.changes === 0)
         return res.status(404).json({ error: "not found" });
       const row = await db.get("SELECT * FROM items WHERE id = ?", [id]);
       res.json(row);
-    }
+    },
   );
 
   // Delete
